@@ -4,8 +4,10 @@
   const dispatch = createEventDispatcher();
   export let todo;
 
-  $: todo.durationToDisplay =
-    todo.duration == 0 ? "TODO" : time_convert(todo.duration);
+  // $: todo.durationToDisplay =
+    // todo.duration == 0 ? "TODO" : time_convert(todo.duration);
+
+// ssetInterval(() => console.log("CHLD " + todo.durationToDisplay));
 
   function time_convert(seconds) {
     var hours = Math.floor(seconds / 3600);
