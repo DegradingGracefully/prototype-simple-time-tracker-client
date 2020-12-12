@@ -5,7 +5,7 @@
   export let todo;
 
   // $: todo.durationToDisplay =
-    // todo.duration == 0 ? "TODO" : time_convert(todo.duration);
+  // todo.duration == 0 ? "TODO" : time_convert(todo.duration);
 
 // ssetInterval(() => console.log("CHLD " + todo.durationToDisplay));
 

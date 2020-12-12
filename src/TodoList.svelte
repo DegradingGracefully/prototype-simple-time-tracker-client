@@ -3,9 +3,20 @@
   import Todo from "./Todo.svelte";
 
   const URL_GET_ALL_TASKS = "http://localhost:4000/task";
-  const URL_GET_CURRENT_TASK_TRACKING = "http://localhost:4000/currentTaskTracking";
+  const URL_GET_CURRENT_TASK_TRACKING =
+    "http://localhost:4000/currentTaskTracking";
+  const URL_UPDATE_CURRENT_TASK_TRACKING =
+    "http://localhost:4000/currentTaskTracking";
 
   const ID_NO_TASK_TRACKING = 0; // represents the fact that we're not tracking any task currently
+
+  const NO_TASK_TRACKING = {
+    isTracking: false,
+    taskId: ID_NO_TASK_TRACKING,
+    duration: 0,
+    timeBeginTracking: null
+  };
+
   const TEXT_TASK_TO_BEGIN = "TODO";
 
   let todos = [];
@@ -15,12 +26,9 @@
 
   onMount(async () => {
     // must intialize currentTaskTracking to unselected here
-    currentTaskTracking = {
-      task_id: ID_NO_TASK_TRACKING,
-      timeBeginTracking: 0,
-    };
+    currentTaskTracking = { ...NO_TASK_TRACKING };
 
-    console.log("onMount: fetching data from server...")
+    console.log("onMount: fetching data from server...");
 
     // get all tasks
     let res = await fetch(URL_GET_ALL_TASKS);
@@ -32,46 +40,53 @@
       durationToDisplay = todoText.duration
       Object.assign(todo, { durationToDisplay: });
     });*/
-    todos.forEach(todo => {
+    todos.forEach((todo) => {
       updateDurationToDisplay(todo);
     });
-
-    updateCurrentTaskTrackingDuration();
 
     // get currentTaskTracking
     res = await fetch(URL_GET_CURRENT_TASK_TRACKING);
     currentTaskTracking = await res.json();
-    console.log("Got currentTaskTracking:\n" + JSON.stringify(currentTaskTracking));
+    console.log(
+      "Got currentTaskTracking:\n" + JSON.stringify(currentTaskTracking)
+    );
+
+    currentTaskTracking.timeBeginTracking = new Date(currentTaskTracking.timeBeginTracking); // hack to be able to perform javascript operations on mongo dates.... ?
+    // check https://docs.mongodb.com/manual/reference/method/Date/
+
+    updateCurrentTaskTrackingDuration();
 
     // launch the "eternal" timer that updates the display of the duration
     interval = setInterval(() => {
       updateCurrentTaskTrackingDuration();
-     } ,500);
+    }, 500);
     // setTimeout(updateCurrentTaskTrackingDuration, 1000);
   });
 
   // async function updateCurrentTaskTrackingDuration() { // TODO: ADDED "async" just to be able to use "await" (in await tick()).. is that ok ???
-  function updateCurrentTaskTrackingDuration() { // TODO: ADDED "async" just to be able to use "await" (in await tick()).. is that ok ???
-    console.log("if " + currentTaskTracking.task_id + " != " + ID_NO_TASK_TRACKING);
-    // if (currentTaskTracking.task_id !== ID_NO_TASK_TRACKING) {
-    if (currentTaskTracking.task_id != ID_NO_TASK_TRACKING) {
-    // only update if there's a task selected
-      // ... calculates the "new" duration
+  function updateCurrentTaskTrackingDuration() {
+    if (currentTaskTracking.isTracking) {
+      // only update if there's a task selected
+      
+      // calculates the "new" duration
+      console.log("updateCurrentTaskTrackingDuration=>" + currentTaskTracking.timeBeginTracking);
+      console.log("Date.now() - currentTaskTracking.timeBeginTracking=>" + (Date.now() - currentTaskTracking.timeBeginTracking));
+
       let durationMillis = Date.now() - currentTaskTracking.timeBeginTracking;
       let durationSeconds = Math.floor(durationMillis / 1000);
-
+console.log("updateCurrentTaskTrackingDuration=>" + durationSeconds);
       // updates the task duration
-      let currentTodo = todos.find((t) => t._id === currentTaskTracking.task_id);
+      let currentTodo = todos.find(
+        (t) => t._id === currentTaskTracking.taskId
+      );
       // currentTodo.duration += durationSeconds;
       // currentTodo.durationToDisplay = time_convert(currentTodo.duration + durationSeconds);
       updateDurationToDisplay(currentTodo, durationSeconds);
       todos = todos;
       // todos = todos.map(todo => todo); // hack to update the array of todos in child Task.svelte, in order to update this currentTodo display
       // todosToDisplay = todos.filter((t) => !hideCompleted || !t.done);
-      
-      console.log("1)" + JSON.stringify(currentTodo));
-      console.log("2)" + JSON.stringify(todos.find((t) => t._id === currentTaskTracking.task_id)));
-      console.log("3)" + JSON.stringify(todos));
+
+      console.log("updated currentTaskTracking: " + JSON.stringify(currentTodo));
     }
 
     // await tick();
@@ -85,8 +100,8 @@
       id: lastId++,
       title: title,
       done: done,
-      duration: duration
-    }
+      duration: duration,
+    };
     updateDurationToDisplay(newTodo);
 
     return newTodo;
@@ -105,6 +120,7 @@
 
   // function updateDurationToDisplayTemporay(todo, newDuration) {
   function updateDurationToDisplay(todo, newDuration = 0) {
+    console.log("updateDurationToDisplay=>" + todo.duration);
     if (newDuration != 0) {
       todo.durationToDisplay = time_convert(todo.duration + newDuration);
     } else if (todo.duration == 0) {
@@ -115,6 +131,7 @@
   }
 
   function time_convert(seconds) {
+    console.log("time_convert=>" + seconds);
     var hours = Math.floor(seconds / 3600);
     var minutes = Math.floor((seconds % 3600) / 60);
     var seconds = seconds % 60;
@@ -147,15 +164,16 @@
     var previousTodo;
 
     // if we were tracking a task ...
-    if (currentTaskTracking.task_id != ID_NO_TASK_TRACKING) {
+    if (currentTaskTracking.isTracking) {
       // ... calculates the "new" duration
       let durationMillis = Date.now() - currentTaskTracking.timeBeginTracking;
       let durationSeconds = Math.floor(durationMillis / 1000);
 
       // updates the task duration
-      previousTodo = todos.find((t) => t._id === currentTaskTracking.task_id);
+      previousTodo = todos.find((t) => t._id === currentTaskTracking.taskId);
       previousTodo.duration += durationSeconds;
       updateDurationToDisplay(previousTodo);
+      sendUpdateCurrentTaskTracking();
       todos = todos; // hack to update the array of todos in child Task.svelte, in order to update this previousTodo display
       console.log(previousTodo);
     }
@@ -163,45 +181,43 @@
     let currentTaskTitle = todos.find((t) => t._id === todoId).title;
 
     // if we were tracking the selected task of id todoId => just stop tracking
-    if (currentTaskTracking.task_id == todoId) {
-      currentTaskTracking.task_id = ID_NO_TASK_TRACKING;
-      console.log(getCurrentTimeString() + ": stopped task \"" + currentTaskTitle + "\"");
+    if (currentTaskTracking.taskId == todoId) {
+      currentTaskTracking = { ...NO_TASK_TRACKING };
+      console.log(
+        getCurrentTimeString() + ': stopped task "' + currentTaskTitle + '"'
+      );
     } else {
       // else switch to selected task
-      currentTaskTracking.task_id = todoId;
+      currentTaskTracking.isTracking = true;
+      currentTaskTracking.taskId = todoId;
       currentTaskTracking.timeBeginTracking = Date.now() - 1000;
-      updateCurrentTaskTrackingDuration();
-      console.log(getCurrentTimeString() + ": switching to task \"" + currentTaskTitle + "\"");
     }
+
+    updateCurrentTaskTrackingDuration();
+    sendUpdateCurrentTaskTracking();
+    console.log(
+      getCurrentTimeString() + ': switching to task "' + currentTaskTitle + '"'
+    );
 
     interval = setInterval(() => {
       updateCurrentTaskTrackingDuration();
-     } ,500);
+    }, 500);
   }
 
-  /* function switchTracking(todo) {
-    // if we were tracking a task ...
-    if (currentTaskTracking.task_id != ID_NO_TASK_TRACKING) {
-      // ... calculates the "new" duration
-      durationMillis =  Date.now() - todo.timeBeginTracking;
-      durationMinutes = Math.floor(durationMillis / 1000)
-
-      // updates the task duration
-    }
-
-    // if we were tracking the selected task of id todoId => just stop tracking
-    if (currentTaskTracking.task_id == todo.id) {
-      currentTaskTracking.task_id = ID_NO_TASK_TRACKING;
-      console.log(getFormattedTimeString() + ": stopped task " + todo.id);
-    } else {
-    // else switch to selected task
-      currentTaskTracking.task_id = todo.id;
-      currentTaskTracking.timeBeginTracking = Date.now();
-      console.log(getFormattedTimeString() + ": switching to task " + currentTaskTracking.task_id);
-    }
-
-    
-  } */
+  async function sendUpdateCurrentTaskTracking() {
+    const body = JSON.stringify(currentTaskTracking);
+    const headers = {
+      "Content-Length": body.length,
+      "Content-Type": "application/json",
+    };
+    const res = await fetch(URL_UPDATE_CURRENT_TASK_TRACKING, {
+      method: "PUT",
+      headers,
+      body,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
 
   function addTodo() {
     todos = todos.concat(createTodo(todoText));
