@@ -1,31 +1,9 @@
 <script>
-  import { createEventDispatcher } from "svelte";
-  import { fade } from "svelte/transition";
+  import { createEventDispatcher } from 'svelte';
+  import { fade } from 'svelte/transition';
+
   const dispatch = createEventDispatcher();
   export let todo;
-
-  // $: todo.durationToDisplay =
-  // todo.duration == 0 ? "TODO" : time_convert(todo.duration);
-
-// ssetInterval(() => console.log("CHLD " + todo.durationToDisplay));
-
-  function time_convert(seconds) {
-    var hours = Math.floor(seconds / 3600);
-    var minutes = Math.floor((seconds % 3600) / 60);
-    var seconds = seconds % 60;
-
-    if (hours < 10) {
-      hours = "0" + hours;
-    }
-    if (minutes < 10) {
-      minutes = "0" + minutes;
-    }
-    if (seconds < 10) {
-      seconds = "0" + seconds;
-    }
-
-    return hours + ":" + minutes + ":" + seconds;
-  }
 </script>
 
 <style>
