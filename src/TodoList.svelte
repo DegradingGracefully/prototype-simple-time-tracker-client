@@ -3,6 +3,8 @@
   import Todo from './Todo.svelte';
 
   const URL_GET_ALL_TASKS = 'http://localhost:4000/task';
+  const URL_UPDATE_TASK = 'http://localhost:4000/task';
+  const URL_POST_NEW_TASK = 'http://localhost:4000/task';
   const URL_GET_CURRENT_TASK_TRACKING = 'http://localhost:4000/currentTaskTracking';
   const URL_UPDATE_CURRENT_TASK_TRACKING = 'http://localhost:4000/currentTaskTracking';
 
@@ -31,43 +33,12 @@
 
   let interval;
 
-  onMount(async () => {
-    // must intialize currentTaskTracking to unselected here
-    currentTaskTracking = { ...NO_TASK_TRACKING };
+  function getCurrentTimeString() {
+    const date = new Date();
+    const options = { hour: '2-digit', minute: '2-digit' };
 
-    console.log('onMount: fetching data from server...');
-
-    // get all tasks
-    let res = await fetch(URL_GET_ALL_TASKS);
-    todos = await res.json();
-    console.log(`Got tall tasks: ${JSON.stringify(todos)}\n`);
-
-    // add durationToDisplay field
-    /* todos = todosFromServer.map(todo => {
-      durationToDisplay = todoText.duration
-      Object.assign(todo, { durationToDisplay: });
-    }); */
-    todos.forEach((todo) => {
-      updateDurationToDisplay(todo);
-    });
-
-    // get currentTaskTracking
-    res = await fetch(URL_GET_CURRENT_TASK_TRACKING);
-    currentTaskTracking = await res.json();
-    console.log(`Got currentTaskTracking:${JSON.stringify(currentTaskTracking)}\n`);
-
-    // hack to be able to perform javascript operations on mongo dates.... ?
-    // check https://docs.mongodb.com/manual/reference/method/Date/
-    currentTaskTracking.timeBeginTracking = new Date(currentTaskTracking.timeBeginTracking);
-
-    updateCurrentTaskTrackingDuration();
-
-    // launch the "eternal" timer that updates the display of the duration
-    interval = setInterval(() => {
-      updateCurrentTaskTrackingDuration();
-    }, 500);
-    // setTimeout(updateCurrentTaskTrackingDuration, 1000);
-  });
+    return date.toLocaleTimeString('en-us', options);
+  }
 
   function timeConvert(seconds) {
     let hours = Math.floor(seconds / 3600);
@@ -127,7 +98,87 @@
 
     // setTimeout(updateCurrentTaskTrackingDuration, 1000); // replan the "eternal" timer
   }
-  
+
+  onMount(async () => {
+    // must intialize currentTaskTracking to unselected here
+    currentTaskTracking = { ...NO_TASK_TRACKING };
+
+    console.log('onMount: fetching data from server...');
+
+    // get all tasks
+    let res = await fetch(URL_GET_ALL_TASKS);
+    todos = await res.json();
+    console.log(`Got tall tasks: ${JSON.stringify(todos)}\n`);
+
+    // add durationToDisplay field
+    /* todos = todosFromServer.map(todo => {
+      durationToDisplay = todoText.duration
+      Object.assign(todo, { durationToDisplay: });
+    }); */
+    todos.forEach((todo) => {
+      updateDurationToDisplay(todo);
+    });
+
+    // get currentTaskTracking
+    res = await fetch(URL_GET_CURRENT_TASK_TRACKING);
+    currentTaskTracking = await res.json();
+    console.log(`Got currentTaskTracking:${JSON.stringify(currentTaskTracking)}\n`);
+
+    // hack to be able to perform javascript operations on mongo dates.... ?
+    // check https://docs.mongodb.com/manual/reference/method/Date/
+    currentTaskTracking.timeBeginTracking = new Date(currentTaskTracking.timeBeginTracking);
+
+    updateCurrentTaskTrackingDuration();
+
+    // launch the "eternal" timer that updates the display of the duration
+    interval = setInterval(() => {
+      updateCurrentTaskTrackingDuration();
+    }, 500);
+    // setTimeout(updateCurrentTaskTrackingDuration, 1000);
+  });
+
+  async function sendAddNewTask(todo) {
+    const body = JSON.stringify(todo);
+    const headers = {
+      'Content-Length': body.length,
+      'Content-Type': 'application/json',
+    };
+    const res = await fetch(URL_POST_NEW_TASK, {
+      method: 'POST',
+      headers,
+      body,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+    // todo._id = await res.json()._id;
+    /*let createdTodo = await res.json();
+    createdTodo = JSON.parse(createdTodo);
+    console.log(`sendAddNewTask got _id: ${JSON.stringify(createdTodo._id)}`);
+    todo._id = createdTodo._id;*/
+
+    // console.log(`sendAddNewTask response: ${JSON.stringify(res.json())}`);
+    /* const jsonResponse = await res.json();
+    console.log(`sendAddNewTask response: ${JSON.stringify(jsonResponse)}`);
+
+    return jsonResponse; */
+    // return res;
+  }
+
+  async function sendUpdateTask(todo) {
+    const body = JSON.stringify(todo);
+    const headers = {
+      'Content-Length': body.length,
+      'Content-Type': 'application/json',
+    };
+    const res = await fetch(`${URL_UPDATE_TASK}/${todo._id}`, {
+      method: 'PUT',
+      headers,
+      body,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
   async function sendUpdateCurrentTaskTracking() {
     const body = JSON.stringify(currentTaskTracking);
     const headers = {
@@ -141,41 +192,6 @@
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
-  }
-
-  const createTodo = (title, done = false, duration = 0) => {
-    const newTodo = {
-      id: lastId++,
-      title,
-      done,
-      duration,
-    };
-    updateDurationToDisplay(newTodo);
-
-    return newTodo;
-  };
-
-  function addTodo() {
-    todos = todos.concat(createTodo(todoText));
-    todoText = '';
-  }
-  function deleteTodo(todoId) {
-    todos = todos.filter((t) => t.id !== todoId);
-  }
-  function toggleDone(todo) {
-    const { id } = todo;
-    todos = todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
-  }
-
-  function filterCompleted(t) {
-    return !hideCompleted || !t.done;
-  }
-
-  function getCurrentTimeString() {
-    const date = new Date();
-    const options = { hour: '2-digit', minute: '2-digit' };
-
-    return date.toLocaleTimeString('en-us', options);
   }
 
   /*  switchTracking determines which task to begin / stop tracking / switch to other task
@@ -200,6 +216,7 @@
       // in order to update this previousTodo display
       todos = todos;
       console.log(previousTodo);
+      sendUpdateTask(previousTodo);
     }
 
     const currentTaskTitle = todos.find((t) => t._id === todoId).title;
@@ -223,6 +240,49 @@
       updateCurrentTaskTrackingDuration();
     }, 500);
   }
+
+  const createTodo = (title, done = false, duration = 0, enabled = true) => {
+  // async function createTodo(title, done = false, duration = 0, enabled = true) {
+    const newTodo = {
+      id: lastId++,
+      title,
+      done,
+      duration,
+      enabled
+    };
+    // we get new mongo document in json response to query
+    /*const jsonResponse = await sendAddNewTask(newTodo).json()._id;
+    console.log(`createTodo got response: ${JSON.stringify(jsonResponse)}`);
+    newTodo._id = sendAddNewTask(newTodo)._id;
+    console.log(`created todo: ${JSON.stringify(newTodo)}`);*/
+    sendAddNewTask(newTodo).then(jsonTodo => {
+      console.log(`Inside res.json() result promise, got json ${jsonTodo.data._id}`);
+            console.log(`Inside res.json() result promise, got json ${JSON.stringify(jsonTodo.data)})`);
+
+      console.log(`Inside res.json() result promise, got json ${JSON.stringify(jsonTodo)})`);
+      newTodo._id = jsonTodo.data._id;
+    });    
+    updateDurationToDisplay(newTodo);
+
+    return newTodo;
+  };
+
+  async function addTodo() {
+    const newTodo = await createTodo(todoText);
+    todos = todos.concat(newTodo);
+    todoText = '';
+  }
+  function deleteTodo(todoId) {
+    todos = todos.filter((t) => t.id !== todoId);
+  }
+  function toggleDone(todo) {
+    const { id } = todo;
+    todos = todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+  }
+
+  function filterCompleted(t) {
+    return !hideCompleted || !t.done;
+  }
 </script>
 
 <style>
@@ -241,7 +301,7 @@
   <div>
     {status}
     <div>
-      Hide completed:
+      Hide complete:
       <input
         type="checkbox"
         checked={hideCompleted}
