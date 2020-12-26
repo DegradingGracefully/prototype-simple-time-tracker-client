@@ -116,6 +116,7 @@
       Object.assign(todo, { durationToDisplay: });
     }); */
     todos.forEach((todo) => {
+      todo.duration = todo.durationForToday; // tmp TODO remove!!!!!!!!!!
       updateDurationToDisplay(todo);
     });
 
@@ -210,8 +211,15 @@
       // updates the task duration
       previousTodo = todos.find((t) => t._id === currentTaskTracking.taskId);
       previousTodo.duration += durationSeconds;
+
+      // must save the tracking period we've just ended
+      previousTodo.trackingByDate.push({
+        dateBegin: currentTaskTracking.timeBeginTracking,
+        dateEnd: Date.now()
+      });
+
       updateDurationToDisplay(previousTodo);
-      sendUpdateCurrentTaskTracking();
+      // TODO => bug?? useless call ???? sendUpdateCurrentTaskTracking();
       // hack to update the array of todos in child Task.svelte,
       // in order to update this previousTodo display
       todos = todos;
