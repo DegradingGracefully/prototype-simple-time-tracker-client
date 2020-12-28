@@ -304,71 +304,68 @@
   }
 </script>
 <style>
+    /* .header-info {
+    vertical-align: top;
+  } */
+  .make-children-div-full-height {
+    align-items: stretch; 
+    /* a "flex" option apparently, needed to have the info header dv (the one with the nb of tasks) to be full height
+       to align the text to the new task input field...
+       https://stackoverflow.com/questions/15381172/how-can-i-make-flexbox-children-100-height-of-their-parent ? */
+  }
 </style>
-<!-- <article class="panel">
-        <p class="panel-heading  
-              has-background-warning">
-            <span class='title is-4'>Movies</span>
-        </p>
-        <div class="panel-block">
-            <p class="control has-icons-left">
-                <input class="input is-info" type="text" placeholder="Search">
-                <span class="icon is-left">
-                    <i class="fas fa-search" aria-hidden="true"></i>
-                </span>
-            </p>
-        </div>
-        <p class="panel-tabs">
-            <a class="is-active">All</a>
-            <a>Romentic</a>
-            <a>Comedy</a>
-            <a>Action</a>
-            <a>Drama</a>
-        </p>
-    </article> -->
 <div>
-    <h2>To Do List</h2>
-    <div>
-        {status}
-        <div>
-            Hide complete:
-            <input type="checkbox" checked={hideCompleted} on:change={()=> (hideCompleted = !hideCompleted)} />
-        </div>
-    </div>
-    <br />
-    <form on:submit|preventDefault>
-        <input data-testid="todo-input" type="text" size="30" placeholder="enter new todo here" bind:value={todoText} />
-        <button disabled={!todoText} on:click={addTodo}>Add</button>
-    </form>
     <div class='container'>
-        {#each todos.filter(filterCompleted) as todo}
-        <Todo {todo} on:switchTracking={()=> switchTracking(todo._id)}
-            on:delete={() => deleteTodo(todo._id)}
-            on:toggleDone={() => toggleDone(todo)} />
-            {/each}
-            <!---------------------------------------------------------------------->
-            <!--------------       MODAL                  ------------------------>
-            <!---------------------------------------------------------------------->
-            <div id="my-modal" class="modal">
-                <div class="modal-background"></div>
-                <div class="modal-content">
-                    <div class="box">
-                        <div class="content columns is-mobile">
-                            <div class="column task-title is-5">
-                                <strong>time-more ... </strong>
-                            </div>
-                            <div class="column task-duration is-5">
-                                <small>1h47</small>
-                            </div>
-                            <div class="column task-more-info is-2">
-                                <span class="icon has-text-info">
-                                    <i class="fas fa-info-circle"></i>
-                                </span>
-                            </div>
+        <article class="panel">
+            <p class="panel-heading  
+              has-background-warning">
+                <span class='title is-4'>Time Brief</span>
+            </p>
+            <div class="panel-block columns make-children-div-full-height">
+                <p class="control column is-7 has-icons-left">
+                    <input data-testid="todo-input" type="text" size="30" placeholder="enter new todo here" bind:value={todoText} />
+                    <button disabled={!todoText} on:click={addTodo}>Add</button>
+                    <span class="icon is-left">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                    </span>
+                </p>
+                <div class="column is-5 header-info">
+                    {status}
+                    <div>
+                        Hide complete:
+                        <input type="checkbox" checked={hideCompleted} on:change={()=> (hideCompleted = !hideCompleted)} />
+                    </div>
+                </div>
+            </div>
+            {#each todos.filter(filterCompleted) as todo}
+            <Todo {todo} on:switchTracking={()=> switchTracking(todo._id)}
+                on:delete={() => deleteTodo(todo._id)}
+                on:toggleDone={() => toggleDone(todo)} />
+                {/each}
+        </article>
+        <!---------------------------------------------------------------------->
+        <!--------------       MODAL                  ------------------------>
+        <!---------------------------------------------------------------------->
+        <div id="my-modal" class="modal">
+            <div class="modal-background"></div>
+            <div class="modal-content">
+                <div class="box">
+                    <div class="content columns is-mobile">
+                        <div class="column task-title is-5">
+                            <strong>time-more ... </strong>
+                        </div>
+                        <div class="column task-duration is-5">
+                            <small>1h47</small>
+                        </div>
+                        <div class="column task-more-info is-2">
+                            <span class="icon has-text-info">
+                                <i class="fas fa-info-circle"></i>
+                            </span>
                         </div>
                     </div>
                 </div>
-                <button class="modal-close is-large" aria-label="close"></button>
             </div>
+            <button class="modal-close is-large" aria-label="close"></button>
+        </div>
     </div>
 </div>
