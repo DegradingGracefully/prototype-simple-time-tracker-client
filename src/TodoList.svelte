@@ -1,5 +1,7 @@
 <script>
-  import { onMount } from 'svelte';
+    import { onMount } from 'svelte';
+    import {afterUpdate} from 'svelte';
+
   import Todo from './Todo.svelte';
 
   const URL_GET_ALL_TASKS = 'http://localhost:4000/task';
@@ -99,6 +101,9 @@
     // setTimeout(updateCurrentTaskTrackingDuration, 1000); // replan the "eternal" timer
   }
 
+/* ------------------------------------------------------------------------------------->
+  ---------------                 BEGIN SVELTE LIFECYCLE METHODS        ---------------->
+  --------------------------------------------------------------------------------------> */
   onMount(async () => {
     // must intialize currentTaskTracking to unselected here
     currentTaskTracking = { ...NO_TASK_TRACKING };
@@ -137,6 +142,12 @@
     }, 500);
     // setTimeout(updateCurrentTaskTrackingDuration, 1000);
   });
+
+  afterUpdate(() => onModalButtonsOnSvelteMounted());
+
+/* ----------------------------------------------------------------------------------->
+  ---------------                 END SVELTE LIFECYCLE METHODS        ---------------->
+  ------------------------------------------------------------------------------------> */
 
   async function sendAddNewTask(todo) {
     const body = JSON.stringify(todo);
@@ -292,47 +303,72 @@
     return !hideCompleted || !t.done;
   }
 </script>
-
 <style>
-  button {
-    margin-left: 10px;
-  }
-  ul.unstyled {
-    list-style: none;
-    margin-left: 0;
-    padding-left: 0;
-  }
 </style>
-
+<!-- <article class="panel">
+        <p class="panel-heading  
+              has-background-warning">
+            <span class='title is-4'>Movies</span>
+        </p>
+        <div class="panel-block">
+            <p class="control has-icons-left">
+                <input class="input is-info" type="text" placeholder="Search">
+                <span class="icon is-left">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                </span>
+            </p>
+        </div>
+        <p class="panel-tabs">
+            <a class="is-active">All</a>
+            <a>Romentic</a>
+            <a>Comedy</a>
+            <a>Action</a>
+            <a>Drama</a>
+        </p>
+    </article> -->
 <div>
-  <h2>To Do List</h2>
-  <div>
-    {status}
+    <h2>To Do List</h2>
     <div>
-      Hide complete:
-      <input
-        type="checkbox"
-        checked={hideCompleted}
-        on:change={() => (hideCompleted = !hideCompleted)} />
+        {status}
+        <div>
+            Hide complete:
+            <input type="checkbox" checked={hideCompleted} on:change={()=> (hideCompleted = !hideCompleted)} />
+        </div>
     </div>
-  </div>
-  <br />
-  <form on:submit|preventDefault>
-    <input
-      data-testid="todo-input"
-      type="text"
-      size="30"
-      placeholder="enter new todo here"
-      bind:value={todoText} />
-    <button disabled={!todoText} on:click={addTodo}>Add</button>
-  </form>
-  <ul class="unstyled">
-    {#each todos.filter(filterCompleted) as todo}
-      <Todo
-        {todo}
-        on:switchTracking={() => switchTracking(todo._id)}
-        on:delete={() => deleteTodo(todo._id)}
-        on:toggleDone={() => toggleDone(todo)} />
-    {/each}
-  </ul>
+    <br />
+    <form on:submit|preventDefault>
+        <input data-testid="todo-input" type="text" size="30" placeholder="enter new todo here" bind:value={todoText} />
+        <button disabled={!todoText} on:click={addTodo}>Add</button>
+    </form>
+    <div class='container'>
+        {#each todos.filter(filterCompleted) as todo}
+        <Todo {todo} on:switchTracking={()=> switchTracking(todo._id)}
+            on:delete={() => deleteTodo(todo._id)}
+            on:toggleDone={() => toggleDone(todo)} />
+            {/each}
+            <!---------------------------------------------------------------------->
+            <!--------------       MODAL                  ------------------------>
+            <!---------------------------------------------------------------------->
+            <div id="my-modal" class="modal">
+                <div class="modal-background"></div>
+                <div class="modal-content">
+                    <div class="box">
+                        <div class="content columns is-mobile">
+                            <div class="column task-title is-5">
+                                <strong>time-more ... </strong>
+                            </div>
+                            <div class="column task-duration is-5">
+                                <small>1h47</small>
+                            </div>
+                            <div class="column task-more-info is-2">
+                                <span class="icon has-text-info">
+                                    <i class="fas fa-info-circle"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="modal-close is-large" aria-label="close"></button>
+            </div>
+    </div>
 </div>

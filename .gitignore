@@ -4,3 +4,5 @@
 .DS_Store
 
 time-more-client-app.sublime-workspace
+
+package-lock.json
