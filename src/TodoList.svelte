@@ -336,7 +336,7 @@
             </p>
             <div class="panel-block columns make-children-div-full-height">
                 <p class="control column is-7 has-icons-left">
-                    <input data-testid="todo-input" type="text" size="30" placeholder="enter new todo here" bind:value={todoText} />
+                    <input data-testid="todo-input" type="text" size="30" placeholder="enter new task here" bind:value={todoText} />
                     <button disabled={!todoText} on:click={addTodo}>Add</button>
                     <span class="icon is-left">
                         <i class="fas fa-search" aria-hidden="true"></i>

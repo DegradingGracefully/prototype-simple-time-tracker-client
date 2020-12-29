@@ -26,7 +26,7 @@ export let todo;
 <!-------------------------------------------------------------------------------->
 <div transition:fade class="box">
     <div class="content columns is-multiline is-mobile">
-        <div class="{'done-' + todo.done} column task-title is-5 py-0" on:click={()=> dispatch('switchTracking')}>
+        <div class="{'done-' + todo.done} column task-title is-5 py-0 is-clickable" on:click={()=> dispatch('switchTracking')}>
             <strong>{todo.title}</strong>
         </div>
         <div class="column task-more-info is-2 py-0 modal-button" data-target="my-modal">
