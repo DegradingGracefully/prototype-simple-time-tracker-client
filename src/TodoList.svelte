@@ -64,6 +64,10 @@
     let hours = Math.floor(seconds / 3600);
     let minutes = Math.floor((seconds % 3600) / 60);
     
+    if (minutes < 10) {
+      minutes = '0' + minutes;
+    }
+    
     if (hours === 0) {
       // return `{minutes}m`; // how to do variable interpolation in string, outside of console.log ?
       return minutes + "m";
