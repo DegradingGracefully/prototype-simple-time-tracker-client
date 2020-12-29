@@ -42,13 +42,10 @@
     return date.toLocaleTimeString('en-us', options);
   }
 
-  function timeConvert(seconds) {
+  function timeConvertBak(seconds) {
     let hours = Math.floor(seconds / 3600);
     let minutes = Math.floor((seconds % 3600) / 60);
-  
     seconds = seconds % 60;
-
-    console.log(`timeConvert=>${seconds}`);
 
     if (hours < 10) {
       hours = '0' + hours;
@@ -63,8 +60,24 @@
     return hours + ':' + minutes + ':' + seconds;
   }
 
+  function timeConvert(seconds) {
+    let hours = Math.floor(seconds / 3600);
+    let minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (hours === 0) {
+      // return `{minutes}m`; // how to do variable interpolation in string, outside of console.log ?
+      return minutes + "m";
+    } else {
+      // return `{hours}h{minutes}`; 
+      return hours + "h" + minutes;
+    }
+  }
+
+  /* const moreThanOneHourInSeconds = 3667;
+  console.log(timeConvert(moreThanOneHourInSeconds)); */
+
   function updateDurationToDisplay(todo, newDuration = 0) {
-    console.log(`updateDurationToDisplay=>${todo.duration}`);
+    // console.log(`updateDurationToDisplay=>${todo.duration}`);
     if (newDuration !== 0) {
       todo.durationToDisplay = timeConvert(todo.duration + newDuration);
     } else if (todo.duration === 0) {
@@ -79,12 +92,12 @@
       // only update if there's a task selected
   
       // calculates the "new" duration
-      console.log(`updateCurrentTaskTrackingDuration=>${currentTaskTracking.timeBeginTracking}`);
-      console.log(`Date.now() - currentTaskTracking.timeBeginTracking=>${(Date.now() - currentTaskTracking.timeBeginTracking)}`);
+      /* console.log(`updateCurrentTaskTrackingDuration=>${currentTaskTracking.timeBeginTracking}`);
+      console.log(`Date.now() - currentTaskTracking.timeBeginTracking=>${(Date.now() - currentTaskTracking.timeBeginTracking)}`); */
 
       const durationMillis = Date.now() - currentTaskTracking.timeBeginTracking;
       const durationSeconds = Math.floor(durationMillis / 1000);
-      console.log(`updateCurrentTaskTrackingDuration=>${durationSeconds}`);
+      // console.log(`updateCurrentTaskTrackingDuration=>${durationSeconds}`);
       // updates the task duration
       const currentTodo = todos.find((t) => t._id === currentTaskTracking.taskId);
       // currentTodo.duration += durationSeconds;
@@ -93,7 +106,7 @@
       todos = todos;
       // todosToDisplay = todos.filter((t) => !hideCompleted || !t.done);
 
-      console.log(`updated currentTaskTracking: ${JSON.stringify(currentTodo)}`);
+      // console.log(`updated currentTaskTracking: ${JSON.stringify(currentTodo)}`);
     }
 
     // await tick();
