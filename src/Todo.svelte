@@ -16,9 +16,23 @@ export let todo;
     text-align: right;
 }
 
+/* TODO: messy styles => may be cleaned later maybe. Just did what I needed.. class below
+   to align the play/stop button with the title... */
+.task-title {
+    /* vertical-align: middle; */
+    display: flex;
+    /* align-items: center; */
+    align-items: stretch;
+}
+
 .modify-duration-button {
     color: hsl(14, 100%, 53%);
     display: none;
+}
+
+.stop-button {
+    height: 100%;
+    margin-right: 10px;
 }
 </style>
 <!-------------------------------------------------------------------------------->
@@ -26,8 +40,26 @@ export let todo;
 <!-------------------------------------------------------------------------------->
 <div transition:fade class="box">
     <div class="content columns is-multiline is-mobile">
-        <div class="{'done-' + todo.done} column task-title is-5 py-0 is-clickable" on:click={()=> dispatch('switchTracking')}>
-            <strong>{todo.title}</strong>
+        <div class="{'done-' + todo.done} column task-title is-5 is-clickable" on:click={()=> dispatch('switchTracking')}>
+            {#if todo.isTracking}
+            <span class="task-title">
+                <!-- must keep this apparently useless span container => fixes conflict between
+                svelte registering the original span , and font awesome transforming it to an svg
+                https://github.com/sveltejs/svelte/issues/5290#issuecomment-691712604
+                https://stackoverflow.com/questions/58768701/sapper-how-do-i-fix-parentnode-is-null-when-navigating-away-from-a-page-with
+            -->
+            
+                <span class='stop-button fas fa-stop-circle has-text-danger is-size-5'></span>
+            
+                <strong>{todo.title}</strong>
+            </span>
+            {:else}
+            <span>
+                <span class='fas fa-play is-size-7'></span>
+                |
+                <strong>{todo.title}</strong>
+            </span>
+            {/if}
         </div>
         <div class="column task-more-info is-2 py-0 modal-button" data-target="my-modal">
             <span class="icon has-text-info">

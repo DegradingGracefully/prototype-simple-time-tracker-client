@@ -77,6 +77,12 @@
     }
   }
 
+  function getCurrentTask() {
+    console.log("current task:" + JSON.stringify(todos.find((task) => task._id === currentTaskTracking.taskId)));
+    return todos.find((task) => task._id === currentTaskTracking.taskId);
+  }
+
+
   /* const moreThanOneHourInSeconds = 3667;
   console.log(timeConvert(moreThanOneHourInSeconds)); */
 
@@ -140,6 +146,7 @@
     todos.forEach((todo) => {
       todo.duration = todo.durationForToday; // tmp TODO remove!!!!!!!!!!
       updateDurationToDisplay(todo);
+      todo.isTracking = false;
     });
 
     // get currentTaskTracking
@@ -152,6 +159,11 @@
     currentTaskTracking.timeBeginTracking = new Date(currentTaskTracking.timeBeginTracking);
 
     updateCurrentTaskTrackingDuration();
+
+    if (currentTaskTracking.isTracking) {
+      let currentTask = getCurrentTask();
+      currentTask.isTracking = true;      
+    }
 
     // launch the "eternal" timer that updates the display of the duration
     interval = setInterval(() => {
@@ -239,6 +251,7 @@
       // updates the task duration
       previousTodo = todos.find((t) => t._id === currentTaskTracking.taskId);
       previousTodo.duration += durationSeconds;
+      previousTodo.isTracking = false;      
 
       // must save the tracking period we've just ended
       previousTodo.trackingByDate.push({
@@ -250,31 +263,43 @@
       // TODO => bug?? useless call ???? sendUpdateCurrentTaskTracking();
       // hack to update the array of todos in child Task.svelte,
       // in order to update this previousTodo display
-      todos = todos;
+      // todos = todos;
       console.log(previousTodo);
       sendUpdateTask(previousTodo);
     }
 
-    const currentTaskTitle = todos.find((t) => t._id === todoId).title;
+    const newTaskTracking = todos.find((t) => t._id === todoId);
 
     // if we were tracking the selected task of id todoId => just stop tracking
     if (currentTaskTracking.taskId == todoId) {
       currentTaskTracking = { ...NO_TASK_TRACKING };
-      console.log(`${getCurrentTimeString()}: stopped task '${currentTaskTitle}'`);
+      console.log(`${getCurrentTimeString()}: stopped task '${newTaskTracking.title}'`);
     } else {
       // else switch to selected task
       currentTaskTracking.isTracking = true;
       currentTaskTracking.taskId = todoId;
       currentTaskTracking.timeBeginTracking = Date.now() - 1000;
+      newTaskTracking.isTracking = true;
+      console.log(newTaskTracking);
+      console.log(`${getCurrentTimeString()}: switching to task '${newTaskTracking.title}'`);
     }
 
     updateCurrentTaskTrackingDuration();
-    sendUpdateCurrentTaskTracking();
-    console.log(`${getCurrentTimeString()}: switching to task '${currentTaskTitle}`);
+    sendUpdateCurrentTaskTracking();    
+
+    todos = todos; // hack
+console.log('switched to task:' + JSON.stringify(todos.find((t) => t._id === todoId)));
 
     interval = setInterval(() => {
       updateCurrentTaskTrackingDuration();
     }, 500);
+  }
+
+  function switchTracking2(todoId) {
+    const newTaskTracking = todos.find((t) => t._id === todoId);
+      newTaskTracking.isTracking = true;
+      todos = todos;
+
   }
 
   const createTodo = (title, done = false, duration = 0, enabled = true) => {
@@ -325,6 +350,7 @@
     vertical-align: top;
   } */
   .make-children-div-full-height {
+    display: flex;
     align-items: stretch; 
     /* a "flex" option apparently, needed to have the info header dv (the one with the nb of tasks) to be full height
        to align the text to the new task input field...
