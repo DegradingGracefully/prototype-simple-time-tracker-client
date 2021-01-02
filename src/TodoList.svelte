@@ -27,6 +27,8 @@
   let todoText = '';
   let hideCompleted = true;
 
+  let globalDuration;
+
   $: uncompletedCount = todos.filter((t) => !t.done).length;
   $: status = `${uncompletedCount} of ${todos.length} remaining`;
   // $: todosToDisplay = todos.filter((t) => !hideCompleted || !t.done);
@@ -78,7 +80,7 @@
   }
 
   function getCurrentTask() {
-    console.log("current task:" + JSON.stringify(todos.find((task) => task._id === currentTaskTracking.taskId)));
+    // console.log("current task:" + JSON.stringify(todos.find((task) => task._id === currentTaskTracking.taskId)));
     return todos.find((task) => task._id === currentTaskTracking.taskId);
   }
 
@@ -97,10 +99,7 @@
     }
   }
 
-  function updateCurrentTaskTrackingDuration() {
-    if (currentTaskTracking.isTracking) {
-      // only update if there's a task selected
-  
+  function getCurrentTaskNewDuration() {
       // calculates the "new" duration
       /* console.log(`updateCurrentTaskTrackingDuration=>${currentTaskTracking.timeBeginTracking}`);
       console.log(`Date.now() - currentTaskTracking.timeBeginTracking=>${(Date.now() - currentTaskTracking.timeBeginTracking)}`); */
@@ -108,17 +107,26 @@
       const durationMillis = Date.now() - currentTaskTracking.timeBeginTracking;
       const durationSeconds = Math.floor(durationMillis / 1000);
       // console.log(`updateCurrentTaskTrackingDuration=>${durationSeconds}`);
-      // updates the task duration
+     
+     return durationSeconds;
+  }
+
+  function updateCurrentTaskTrackingDuration() {
+    if (currentTaskTracking.isTracking) {
+      // only update if there's a task selected
+   // updates the task duration
       const currentTodo = todos.find((t) => t._id === currentTaskTracking.taskId);
+      const newDurationSeconds = getCurrentTaskNewDuration();
+
       // currentTodo.duration += durationSeconds;
       // currentTodo.durationToDisplay = timeConvert(currentTodo.duration + durationSeconds);
-      updateDurationToDisplay(currentTodo, durationSeconds);
+      updateDurationToDisplay(currentTodo, newDurationSeconds);
       todos = todos;
       // todosToDisplay = todos.filter((t) => !hideCompleted || !t.done);
 
       // console.log(`updated currentTaskTracking: ${JSON.stringify(currentTodo)}`);
+    globalDuration = timeConvert(todos.reduce((totalDuration, currentTask) => totalDuration + currentTask.durationForToday, 0) + newDurationSeconds);
     }
-
     // await tick();
 
     // setTimeout(updateCurrentTaskTrackingDuration, 1000); // replan the "eternal" timer
@@ -164,6 +172,16 @@
       let currentTask = getCurrentTask();
       currentTask.isTracking = true;      
     }
+
+    let globalDurationWithoutCurrentTask = todos.reduce((totalDuration, currentTask) => totalDuration + currentTask.durationForToday, 0);
+
+    if (currentTaskTracking.isTracking) {
+      globalDuration = globalDurationWithoutCurrentTask + getCurrentTaskNewDuration();
+    } else {
+      globalDuration = globalDurationWithoutCurrentTask;
+    }
+
+    globalDuration = timeConvert(globalDuration);
 
     // launch the "eternal" timer that updates the display of the duration
     interval = setInterval(() => {
@@ -288,7 +306,7 @@
     sendUpdateCurrentTaskTracking();    
 
     todos = todos; // hack
-console.log('switched to task:' + JSON.stringify(todos.find((t) => t._id === todoId)));
+    // console.log('switched to task:' + JSON.stringify(todos.find((t) => t._id === todoId)));
 
     interval = setInterval(() => {
       updateCurrentTaskTrackingDuration();
@@ -309,6 +327,7 @@ console.log('switched to task:' + JSON.stringify(todos.find((t) => t._id === tod
       title,
       done,
       duration,
+      trackingByDate: [],
       enabled
     };
     // we get new mongo document in json response to query
@@ -378,6 +397,7 @@ console.log('switched to task:' + JSON.stringify(todos.find((t) => t._id === tod
                         Hide complete:
                         <input type="checkbox" checked={hideCompleted} on:change={()=> (hideCompleted = !hideCompleted)} />
                     </div>
+                    Total duration today: {globalDuration}
                 </div>
             </div>
             {#each todos.filter(filterCompleted) as todo}
