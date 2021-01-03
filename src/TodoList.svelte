@@ -21,7 +21,7 @@
 
   const TEXT_TASK_TO_BEGIN = 'TODO';
 
-  let todos = [];
+      let todos = [];
   let currentTaskTracking;
 
   let todoText = '';
@@ -66,14 +66,15 @@
     let hours = Math.floor(seconds / 3600);
     let minutes = Math.floor((seconds % 3600) / 60);
     
-    if (minutes < 10) {
-      minutes = '0' + minutes;
-    }
-    
     if (hours === 0) {
+    // less than an hour => only minutes
       // return `{minutes}m`; // how to do variable interpolation in string, outside of console.log ?
       return minutes + "m";
     } else {
+    // more than an hour
+    if (minutes < 10) {
+      minutes = '0' + minutes;
+    }
       // return `{hours}h{minutes}`; 
       return hours + "h" + minutes;
     }
@@ -81,7 +82,7 @@
 
   function getCurrentTask() {
     // console.log("current task:" + JSON.stringify(todos.find((task) => task._id === currentTaskTracking.taskId)));
-    return todos.find((task) => task._id === currentTaskTracking.taskId);
+        return todos.find((task) => task._id === currentTaskTracking.taskId);
   }
 
 
