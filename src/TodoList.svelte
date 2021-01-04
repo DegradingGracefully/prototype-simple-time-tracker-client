@@ -321,13 +321,14 @@
 
   }
 
-  const createTodo = (title, done = false, duration = 0, enabled = true) => {
+  const createTodo = (title, done = false, duration = 0, durationForToday = 0 ,enabled = true) => {
   // async function createTodo(title, done = false, duration = 0, enabled = true) {
     const newTodo = {
       id: lastId++,
       title,
       done,
       duration,
+      durationForToday,
       trackingByDate: [],
       enabled
     };
