@@ -15,7 +15,7 @@
   const NO_TASK_TRACKING = {
     isTracking: false,
     taskId: ID_NO_TASK_TRACKING,
-    duration: 0,
+    durationForToday: 0,
     timeBeginTracking: null
   };
 
@@ -92,11 +92,11 @@
   function updateDurationToDisplay(todo, newDuration = 0) {
     // console.log(`updateDurationToDisplay=>${todo.duration}`);
     if (newDuration !== 0) {
-      todo.durationToDisplay = timeConvert(todo.duration + newDuration);
-    } else if (todo.duration === 0) {
+      todo.durationToDisplay = timeConvert(todo.durationForToday + newDuration);
+    } else if (todo.durationForToday === 0) {
       todo.durationToDisplay = TEXT_TASK_TO_BEGIN;
     } else {
-      todo.durationToDisplay = timeConvert(todo.duration);
+      todo.durationToDisplay = timeConvert(todo.durationForToday);
     }
   }
 
@@ -153,7 +153,6 @@
       Object.assign(todo, { durationToDisplay: });
     }); */
     todos.forEach((todo) => {
-      todo.duration = todo.durationForToday; // tmp TODO remove!!!!!!!!!!
       updateDurationToDisplay(todo);
       todo.isTracking = false;
     });
@@ -183,6 +182,9 @@
     }
 
     globalDuration = timeConvert(globalDuration);
+
+//tmp 
+todos.forEach((t) => console.log(t.durationForToday));
 
     // launch the "eternal" timer that updates the display of the duration
     interval = setInterval(() => {
@@ -269,7 +271,7 @@
 
       // updates the task duration
       previousTodo = todos.find((t) => t._id === currentTaskTracking.taskId);
-      previousTodo.duration += durationSeconds;
+      previousTodo.durationForToday += durationSeconds;
       previousTodo.isTracking = false;      
 
       // must save the tracking period we've just ended
@@ -321,13 +323,12 @@
 
   }
 
-  const createTodo = (title, done = false, duration = 0, durationForToday = 0 ,enabled = true) => {
+  const createTodo = (title, done = false, durationForToday = 0 ,enabled = true) => {
   // async function createTodo(title, done = false, duration = 0, enabled = true) {
     const newTodo = {
       id: lastId++,
       title,
       done,
-      duration,
       durationForToday,
       trackingByDate: [],
       enabled
@@ -338,10 +339,10 @@
     newTodo._id = sendAddNewTask(newTodo)._id;
     console.log(`created todo: ${JSON.stringify(newTodo)}`);*/
     sendAddNewTask(newTodo).then(jsonTodo => {
-      console.log(`Inside res.json() result promise, got json ${jsonTodo.data._id}`);
+      /* console.log(`Inside res.json() result promise, got json ${jsonTodo.data._id}`);
             console.log(`Inside res.json() result promise, got json ${JSON.stringify(jsonTodo.data)})`);
 
-      console.log(`Inside res.json() result promise, got json ${JSON.stringify(jsonTodo)})`);
+      console.log(`Inside res.json() result promise, got json ${JSON.stringify(jsonTodo)})`); */
       newTodo._id = jsonTodo.data._id;
     });    
     updateDurationToDisplay(newTodo);
