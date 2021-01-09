@@ -67,7 +67,7 @@ export let todo;
             </span>
         </div>
         <div class="column task-duration is-5 py-0">
-            <small>{todo.durationToDisplay}</small>
+            <small>{todo.durationHelper.getFormattedDuration()}</small>
         </div>
         <div class="column task-title is-5  py-0">
         </div>

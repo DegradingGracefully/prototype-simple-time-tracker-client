@@ -37,6 +37,45 @@
 
   let interval;
 
+function newDurationHelper(seconds) {
+  const secondsOriginal = seconds;
+  const hoursFloored = Math.floor(seconds / 3600);
+  const minutesFloored = Math.floor((seconds % 3600) / 60);
+  const secondsFloored = hoursFloored * 3600 + minutesFloored * 60;
+  let formattedDisplay;
+
+  if (secondsOriginal === 0) {
+    formattedDisplay = TEXT_TASK_TO_BEGIN;
+  } else if (hoursFloored === 0) {
+    // less than an hour => only minutes
+    formattedDisplay = `${minutesFloored}m`;
+  } else {
+    // more than an hour
+    let minutesPart = minutesFloored;
+    if (minutesPart < 10) {
+      minutesPart = `0${minutesPart}`;
+    }
+    formattedDisplay = `${hoursFloored}h${minutesPart}`;
+  }
+
+  return {
+    getHoursFloored() {
+      return hoursFloored;
+    },
+    getMinutesFloored() {
+      return minutesFloored;
+    },
+    getSecondsFloored() {
+      return secondsFloored;
+    },
+    getFormattedDuration() {
+      /* console.log('secondsOriginal / hoursFloored / minutesFloored / secondsFloored / formattedDisplay');
+      console.log(`${secondsOriginal} / ${hoursFloored} / ${minutesFloored} / ${secondsFloored} / ${formattedDisplay}`); */
+      return formattedDisplay;
+    },
+  };
+}
+
   function getCurrentTimeString() {
     const date = new Date();
     const options = { hour: '2-digit', minute: '2-digit' };
@@ -62,42 +101,9 @@
     return hours + ':' + minutes + ':' + seconds;
   }
 
-  function timeConvert(seconds) {
-    let hours = Math.floor(seconds / 3600);
-    let minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (hours === 0) {
-    // less than an hour => only minutes
-      // return `{minutes}m`; // how to do variable interpolation in string, outside of console.log ?
-      return minutes + "m";
-    } else {
-    // more than an hour
-    if (minutes < 10) {
-      minutes = '0' + minutes;
-    }
-      // return `{hours}h{minutes}`; 
-      return hours + "h" + minutes;
-    }
-  }
-
   function getCurrentTask() {
     // console.log("current task:" + JSON.stringify(todos.find((task) => task._id === currentTaskTracking.taskId)));
         return todos.find((task) => task._id === currentTaskTracking.taskId);
-  }
-
-
-  /* const moreThanOneHourInSeconds = 3667;
-  console.log(timeConvert(moreThanOneHourInSeconds)); */
-
-  function updateDurationToDisplay(todo, newDuration = 0) {
-    // console.log(`updateDurationToDisplay=>${todo.duration}`);
-    if (newDuration !== 0) {
-      todo.durationToDisplay = timeConvert(todo.durationForToday + newDuration);
-    } else if (todo.durationForToday === 0) {
-      todo.durationToDisplay = TEXT_TASK_TO_BEGIN;
-    } else {
-      todo.durationToDisplay = timeConvert(todo.durationForToday);
-    }
   }
 
   function getCurrentTaskNewDuration() {
@@ -112,6 +118,11 @@
      return durationSeconds;
   }
 
+  function getGlobalDurationToDisplay(todoList) {
+    const globalDurationHelper = newDurationHelper(todos.reduce((totalDuration, currentTask) => totalDuration + currentTask.durationHelper.getSecondsFloored(), 0));
+    return globalDurationHelper.getFormattedDuration();
+  }
+
   function updateCurrentTaskTrackingDuration() {
     if (currentTaskTracking.isTracking) {
       // only update if there's a task selected
@@ -119,14 +130,11 @@
       const currentTodo = todos.find((t) => t._id === currentTaskTracking.taskId);
       const newDurationSeconds = getCurrentTaskNewDuration();
 
-      // currentTodo.duration += durationSeconds;
-      // currentTodo.durationToDisplay = timeConvert(currentTodo.duration + durationSeconds);
-      updateDurationToDisplay(currentTodo, newDurationSeconds);
-      todos = todos;
-      // todosToDisplay = todos.filter((t) => !hideCompleted || !t.done);
+      currentTodo.durationHelper = newDurationHelper(currentTodo.durationForToday + newDurationSeconds);
 
-      // console.log(`updated currentTaskTracking: ${JSON.stringify(currentTodo)}`);
-    globalDuration = timeConvert(todos.reduce((totalDuration, currentTask) => totalDuration + currentTask.durationForToday, 0) + newDurationSeconds);
+      todos = todos;
+      console.log(`updated currentTaskTracking: ${JSON.stringify(currentTodo)}`);
+      globalDuration = getGlobalDurationToDisplay(todos);
     }
     // await tick();
 
@@ -153,7 +161,7 @@
       Object.assign(todo, { durationToDisplay: });
     }); */
     todos.forEach((todo) => {
-      updateDurationToDisplay(todo);
+      todo.durationHelper = newDurationHelper(todo.durationForToday);
       todo.isTracking = false;
     });
 
@@ -170,21 +178,14 @@
 
     if (currentTaskTracking.isTracking) {
       let currentTask = getCurrentTask();
-      currentTask.isTracking = true;      
+      currentTask.isTracking = true;
+      const currentTaskNewDurationSeconds = getCurrentTaskNewDuration();
+      currentTask.durationHelper = newDurationHelper(currentTask.durationForToday + currentTaskNewDurationSeconds);
     }
 
-    let globalDurationWithoutCurrentTask = todos.reduce((totalDuration, currentTask) => totalDuration + currentTask.durationForToday, 0);
+    globalDuration = getGlobalDurationToDisplay(todos);
 
-    if (currentTaskTracking.isTracking) {
-      globalDuration = globalDurationWithoutCurrentTask + getCurrentTaskNewDuration();
-    } else {
-      globalDuration = globalDurationWithoutCurrentTask;
-    }
-
-    globalDuration = timeConvert(globalDuration);
-
-//tmp 
-todos.forEach((t) => console.log(t.durationForToday));
+// todos.forEach((t) => console.log(t.durationForToday));
 
     // launch the "eternal" timer that updates the display of the duration
     interval = setInterval(() => {
@@ -272,6 +273,7 @@ todos.forEach((t) => console.log(t.durationForToday));
       // updates the task duration
       previousTodo = todos.find((t) => t._id === currentTaskTracking.taskId);
       previousTodo.durationForToday += durationSeconds;
+      previousTodo.durationHelper = newDurationHelper(previousTodo.durationForToday);
       previousTodo.isTracking = false;      
 
       // must save the tracking period we've just ended
@@ -280,7 +282,6 @@ todos.forEach((t) => console.log(t.durationForToday));
         dateEnd: Date.now()
       });
 
-      updateDurationToDisplay(previousTodo);
       // TODO => bug?? useless call ???? sendUpdateCurrentTaskTracking();
       // hack to update the array of todos in child Task.svelte,
       // in order to update this previousTodo display
@@ -330,6 +331,7 @@ todos.forEach((t) => console.log(t.durationForToday));
       title,
       done,
       durationForToday,
+      durationHelper: newDurationHelper(durationForToday),
       trackingByDate: [],
       enabled
     };
@@ -345,7 +347,6 @@ todos.forEach((t) => console.log(t.durationForToday));
       console.log(`Inside res.json() result promise, got json ${JSON.stringify(jsonTodo)})`); */
       newTodo._id = jsonTodo.data._id;
     });    
-    updateDurationToDisplay(newTodo);
 
     return newTodo;
   };
