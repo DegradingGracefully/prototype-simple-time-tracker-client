@@ -4,6 +4,8 @@
 
   import Todo from './Todo.svelte';
 
+  import newDurationHelper from './DurationHelper.js';
+
   const URL_GET_ALL_TASKS = 'http://localhost:4000/task';
   const URL_UPDATE_TASK = 'http://localhost:4000/task';
   const URL_POST_NEW_TASK = 'http://localhost:4000/task';
@@ -19,9 +21,7 @@
     timeBeginTracking: null
   };
 
-  const TEXT_TASK_TO_BEGIN = 'TODO';
-
-      let todos = [];
+  let todos = [];
   let currentTaskTracking;
 
   let todoText = '';
@@ -36,51 +36,6 @@
   let lastId = 500;
 
   let interval;
-
-/*  The newDuratonHelper class is a container for the "original" number of seconds of the task, as well as
-    its "floored" hours, minutes, and seconds + the formatted string (ie the "{hh}hmm{m}" string format we display in the UI)
-    Use: we don't provide any "updateSeconds" method. Indeed, you need to recreate a new newDurationHelper each time,
-    which is not more costly than an update would be, since if updating the seconds we would have to rerun
-    all the calculations.
-*/
-function newDurationHelper(seconds) {
-  const secondsOriginal = seconds;
-  const hoursFloored = Math.floor(seconds / 3600);
-  const minutesFloored = Math.floor((seconds % 3600) / 60);
-  const secondsFloored = hoursFloored * 3600 + minutesFloored * 60;
-  let formattedDuration;
-
-  if (secondsOriginal === 0) {
-    formattedDuration = TEXT_TASK_TO_BEGIN;
-  } else if (hoursFloored === 0) {
-    // less than an hour => only minutes
-    formattedDuration = `${minutesFloored}m`;
-  } else {
-    // more than an hour
-    let minutesPart = minutesFloored;
-    if (minutesPart < 10) {
-      minutesPart = `0${minutesPart}`;
-    }
-    formattedDuration = `${hoursFloored}h${minutesPart}`;
-  }
-
-  return {
-    getHoursFloored() {
-      return hoursFloored;
-    },
-    getMinutesFloored() {
-      return minutesFloored;
-    },
-    getSecondsFloored() {
-      return secondsFloored;
-    },
-    getFormattedDuration() {
-      /* console.log('secondsOriginal / hoursFloored / minutesFloored / secondsFloored / formattedDuration');
-      console.log(`${secondsOriginal} / ${hoursFloored} / ${minutesFloored} / ${secondsFloored} / ${formattedDuration}`); */
-      return formattedDuration;
-    },
-  };
-}
 
   function getCurrentTimeString() {
     const date = new Date();
@@ -125,7 +80,11 @@ function newDurationHelper(seconds) {
   }
 
   function getGlobalDurationToDisplay(todoList) {
-    const globalDurationHelper = newDurationHelper(todos.reduce((totalDuration, currentTask) => totalDuration + currentTask.durationHelper.getSecondsFloored(), 0));
+    // const globalDurationHelper = newDurationHelper(todos.reduce((totalDuration, currentTask) => totalDuration + currentTask.durationHelper.getSecondsFloored(), 0));
+    const globalDurationHelper = newDurationHelper(todos.reduce((totalDuration, currentTask) => {
+      // console.log("calculate global => adding task '" + currentTask.title + "' duration => " + currentTask.durationHelper.getSecondsFloored());
+      return totalDuration + currentTask.durationHelper.getSecondsFloored();
+    }, 0));
     return globalDurationHelper.getFormattedDuration();
   }
 
@@ -138,8 +97,8 @@ function newDurationHelper(seconds) {
 
       currentTodo.durationHelper = newDurationHelper(currentTodo.durationForToday + newDurationSeconds);
 
-      todos = todos;
-      console.log(`updated currentTaskTracking: ${JSON.stringify(currentTodo)}`);
+      todos = todos; // force update the display
+      // console.log(`updated currentTaskTracking: ${JSON.stringify(currentTodo)}`);
       globalDuration = getGlobalDurationToDisplay(todos);
     }
     // await tick();
@@ -191,7 +150,7 @@ function newDurationHelper(seconds) {
 
     globalDuration = getGlobalDurationToDisplay(todos);
 
-// todos.forEach((t) => console.log(t.durationForToday));
+    todos.forEach((t) => console.log(`Task '${t.title}' duration: ${t.durationForToday}`));
 
     // launch the "eternal" timer that updates the display of the duration
     interval = setInterval(() => {
@@ -277,7 +236,7 @@ function newDurationHelper(seconds) {
       const durationSeconds = Math.floor(durationMillis / 1000);
 
       // updates the task duration
-      previousTodo = todos.find((t) => t._id === currentTaskTracking.taskId);
+      previousTodo = getCurrentTask();
       previousTodo.durationForToday += durationSeconds;
       previousTodo.durationHelper = newDurationHelper(previousTodo.durationForToday);
       previousTodo.isTracking = false;      
@@ -315,7 +274,7 @@ function newDurationHelper(seconds) {
     updateCurrentTaskTrackingDuration();
     sendUpdateCurrentTaskTracking();    
 
-    todos = todos; // hack
+    todos = todos; // force update the display
     // console.log('switched to task:' + JSON.stringify(todos.find((t) => t._id === todoId)));
 
     interval = setInterval(() => {
@@ -326,7 +285,7 @@ function newDurationHelper(seconds) {
   function switchTracking2(todoId) {
     const newTaskTracking = todos.find((t) => t._id === todoId);
       newTaskTracking.isTracking = true;
-      todos = todos;
+      todos = todos; // force update the display
 
   }
 
@@ -339,6 +298,7 @@ function newDurationHelper(seconds) {
       durationForToday,
       durationHelper: newDurationHelper(durationForToday),
       trackingByDate: [],
+      correctDurationForDate: [],
       enabled
     };
     // we get new mongo document in json response to query
@@ -372,6 +332,36 @@ function newDurationHelper(seconds) {
 
   function filterCompleted(t) {
     return !hideCompleted || !t.done;
+  }
+
+  function correctTaskDurationForToday(event) {
+    // console.log(JSON.stringify(event.detail));
+    clearInterval(interval);
+    const nbSecondsCorrection = event.detail.nbSecondsCorrection;
+    const taskToUpdate = todos.find((t) => t._id === event.detail.todoId);
+
+    taskToUpdate.durationForToday = taskToUpdate.durationForToday + nbSecondsCorrection;
+    taskToUpdate.durationHelper = newDurationHelper(taskToUpdate.durationForToday);
+    taskToUpdate.correctDurationForDate.push({
+      date: Date.now(),
+      nbSecondsCorrection: nbSecondsCorrection
+    });
+    todos = todos; // force update the display
+
+    // update the display of global duration
+    globalDuration = getGlobalDurationToDisplay(todos);
+
+    // todos = todos ?
+    console.log(taskToUpdate);;
+    sendUpdateTask(taskToUpdate);
+
+    // finally => execute the function immediately, just if we missed it due to clearing it temporarily...
+    updateCurrentTaskTrackingDuration();
+    
+      // launch the "eternal" timer that updates the display of the duration
+    interval = setInterval(() => {
+        updateCurrentTaskTrackingDuration();
+    }, 500);
   }
 </script>
 <style>
@@ -411,7 +401,8 @@ function newDurationHelper(seconds) {
                 </div>
             </div>
             {#each todos.filter(filterCompleted) as todo}
-            <Todo {todo} on:switchTracking={()=> switchTracking(todo._id)}
+            <Todo {todo} on:switchTracking={()=>switchTracking(todo._id)}
+                on:correctTaskDurationForToday={correctTaskDurationForToday}
                 on:delete={() => deleteTodo(todo._id)}
                 on:toggleDone={() => toggleDone(todo)} />
                 {/each}
