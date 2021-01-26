@@ -9,10 +9,12 @@ export let todo;
 
 let nbSecondsCorrection = 0;
 // booleans for defining the duration text css styles
-let isHideClassShowButtonsOnMouseOut = true;
-let isDisplayClassWaitingBeforeUpdateDuration = false;
-let isDisplayClassConfirmUpdate = false;
-let isDisplayClassInvalidSubstractMinute = false;
+let isMouseOver = false;
+let isHideButtonsOnMouseOut = true;
+let isShowWaitingBeforeUpdateDuration = false;
+let isShowInvalidSubstractMinute = false;
+let isShowConfirmUpdate = false;
+
 
 $: formattedDurationCorrected = newDurationHelper(todo.durationHelper.getSecondsFloored() + nbSecondsCorrection).getFormattedDuration();
 
@@ -20,8 +22,8 @@ let timeout;
 
 function handlePlusClick() {
     clearTimeout(timeout);
-    isDisplayClassWaitingBeforeUpdateDuration = true;
-    isDisplayClassWaitingBeforeUpdateDuration = true;
+    isShowWaitingBeforeUpdateDuration = true;
+    isShowWaitingBeforeUpdateDuration = true;
     nbSecondsCorrection = nbSecondsCorrection + 60;
     console.log(`Additional duration = ${nbSecondsCorrection}`);
     timeout = setTimeout(saveCorrectDuration, 3000);
@@ -29,12 +31,12 @@ function handlePlusClick() {
 
 function handleMinusClick() {
     clearTimeout(timeout);
-    isDisplayClassWaitingBeforeUpdateDuration = true;
+    isShowWaitingBeforeUpdateDuration = true;
     if (todo.durationHelper.getSecondsFloored() + nbSecondsCorrection >= 60) {
         nbSecondsCorrection = nbSecondsCorrection - 60;
     } else {
-        isDisplayClassInvalidSubstractMinute = true;
-        setTimeout(() => isDisplayClassInvalidSubstractMinute = false, 250);  
+        isShowInvalidSubstractMinute = true;
+        setTimeout(() => isShowInvalidSubstractMinute = false, 250);  
     }
     console.log(`Minus x minutes duration = ${nbSecondsCorrection}`);
     timeout = setTimeout(saveCorrectDuration, 3000);    
@@ -44,11 +46,10 @@ function saveCorrectDuration() {
     // send nbSecondsCorrection to parent so that it sends the update to the server
     dispatch('correctTaskDurationForToday', { todoId: todo._id, nbSecondsCorrection: nbSecondsCorrection });
     nbSecondsCorrection = 0;
-    isDisplayClassWaitingBeforeUpdateDuration = false;
-    isDisplayClassConfirmUpdate = true;
-    setTimeout(() => isDisplayClassConfirmUpdate = false, 250);  
+    isShowWaitingBeforeUpdateDuration = false;
+    isShowConfirmUpdate = true;
+    setTimeout(() => isShowConfirmUpdate = false, 250);  
 }
-
 
 </script>
 <style>
@@ -77,16 +78,16 @@ function saveCorrectDuration() {
     /* display: none; */
 }
 
-.isHideClassShowButtonsOnMouseOut {
+.isHideButtonsOnMouseOut {
     display: none;
 }
 
-.isDisplayClassWaitingBeforeUpdateDuration {
+.isShowWaitingBeforeUpdateDuration {
     text-decoration: italic;
     color: hsl(0, 0%, 71%);
 }
 
-.isDisplayClassConfirmUpdate {
+.isShowConfirmUpdate {
     /* font-weight: bold; */
     font-size: 120%;
     /* yellow */
@@ -95,7 +96,7 @@ function saveCorrectDuration() {
     /* color: hsl(14, 100%, 53%); */
 }
 
-.isDisplayClassInvalidSubstractMinute {
+.isShowInvalidSubstractMinute {
     /* font-weight: bold; */
     font-size: 120%;
     /* red */
@@ -138,16 +139,16 @@ function saveCorrectDuration() {
                 <i class="fas fa-info-circle"></i>
             </span>
         </div>
-        <div class="column task-duration is-5 py-0" on:mouseover={() => isHideClassShowButtonsOnMouseOut = false} on:mouseout={() => isHideClassShowButtonsOnMouseOut = true}>
+        <div class="column task-duration is-5 py-0" on:mouseover={() => isHideButtonsOnMouseOut = false} on:mouseout={() => isHideButtonsOnMouseOut = true}>
              <!-- is-narrow ??? -->
-            <span class:isHideClassShowButtonsOnMouseOut on:click={() => handlePlusClick()}>
+            <span class:isHideButtonsOnMouseOut on:click={() => handlePlusClick()}>
             <!-- additionnal span fix similar to above fix => apparently font awesome removes the onclick handler on the elmements
                 on which it is applied ??? (indeed, can't see the click handler if put inside the "font awesome span" below in Svelte Dev Tools )-->
                 <span class="fas fa-plus-circle is-size-50 modify-duration-button"></span> <!-- previously color red ccs class has-text-danger -->
             </span>
-            <small class:isDisplayClassWaitingBeforeUpdateDuration class:isDisplayClassInvalidSubstractMinute class:isDisplayClassConfirmUpdate>{formattedDurationCorrected}</small>
+            <small class:isShowWaitingBeforeUpdateDuration class:isShowInvalidSubstractMinute class:isShowConfirmUpdate>{formattedDurationCorrected}</small>
             {#if todo.durationHelper.getSecondsFloored() >= 60}
-             <span class:isHideClassShowButtonsOnMouseOut on:click={() => handleMinusClick()}>            
+             <span class:isHideButtonsOnMouseOut on:click={() => handleMinusClick()}>    
             <!-- additionnal span fix similar to above fix => apparently font awesome removes the onclick handler on the elmements
                 on which it is applied ??? (indeed, can't see the click handler if put inside the "font awesome span" below in Svelte Dev Tools )-->
                 <span class="fas fa-minus-circle is-size-50 modify-duration-button"></span> <!-- previously color red ccs class has-text-danger -->
