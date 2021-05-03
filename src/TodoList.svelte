@@ -6,11 +6,11 @@
 
   import newDurationHelper from './DurationHelper.js';
 
-  const URL_GET_ALL_TASKS = 'http://localhost:4000/task';
-  const URL_UPDATE_TASK = 'http://localhost:4000/task';
-  const URL_POST_NEW_TASK = 'http://localhost:4000/task';
-  const URL_GET_CURRENT_TASK_TRACKING = 'http://localhost:4000/currentTaskTracking';
-  const URL_UPDATE_CURRENT_TASK_TRACKING = 'http://localhost:4000/currentTaskTracking';
+  const URL_GET_ALL_TASKS = 'http://localhost:4017/task';
+  const URL_UPDATE_TASK = 'http://localhost:4017/task';
+  const URL_POST_NEW_TASK = 'http://localhost:4017/task';
+  const URL_GET_CURRENT_TASK_TRACKING = 'http://localhost:4017/currentTaskTracking';
+  const URL_UPDATE_CURRENT_TASK_TRACKING = 'http://localhost:4017/currentTaskTracking';
 
   const ID_NO_TASK_TRACKING = 0; // represents the fact that we're not tracking any task currently
 
@@ -29,9 +29,7 @@
 
   let globalDuration;
 
-  $: uncompletedCount = todos.filter((t) => !t.done).length;
-  $: status = `${uncompletedCount} of ${todos.length} remaining`;
-  // $: todosToDisplay = todos.filter((t) => !hideCompleted || !t.done);
+  $: status = `Showing ${todos.length} tasks`;
 
   let lastId = 500;
 
@@ -391,13 +389,10 @@
                         <i class="fas fa-search" aria-hidden="true"></i>
                     </span>
                 </p>
-                <div class="column is-5 header-info">
-                    {status}
-                    <div>
-                        Hide complete:
-                        <input type="checkbox" checked={hideCompleted} on:change={()=> (hideCompleted = !hideCompleted)} />
-                    </div>
+                <div class="column is-5 header-info" style="text-align: right">                                    
                     Total duration today: {globalDuration}
+                    <br />
+                    <div ><u>{status}</u></div>
                 </div>
             </div>
             {#each todos.filter(filterCompleted) as todo}
